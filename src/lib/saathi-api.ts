@@ -1,4 +1,4 @@
-import type { CitizenProfile, Scheme } from "./saathi-types";
+import type { BilingualText, CitizenProfile, Scheme } from "./saathi-types";
 
 /**
  * The n8n webhook URL. Set VITE_N8N_WEBHOOK_URL in the project environment.
@@ -63,7 +63,7 @@ function normalise(raw: unknown): Scheme[] {
       const docs = s["required_documents"];
       const legacyName = String(s["scheme_name"] ?? "").trim();
       const nameEn = String(s["scheme_name_en"] ?? legacyName).trim();
-      const nameLocal = String(s["scheme_name_local"] ?? legacyName || nameEn).trim();
+      const nameLocal = String(s["scheme_name_local"] ?? (legacyName || nameEn)).trim();
       return {
         scheme_id: String(s["scheme_id"] ?? `scheme-${index}`),
         scheme_name_en: nameEn || nameLocal,
