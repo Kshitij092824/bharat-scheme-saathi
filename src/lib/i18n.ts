@@ -68,6 +68,7 @@ export interface Strings {
   yes: string;
   no: string;
   tellUsSomething: string;
+  orDivider: string;
   voiceNotAvailable: string;
   back: string;
 }
@@ -82,10 +83,10 @@ const en: Strings = {
   listening: "Listening… speak now",
   stopListening: "Stop",
   orType: "Or type your situation here",
-  moreAboutYou: "Add a few more details (not needed)",
-  moreAboutYouHint: "You can leave any of these empty.",
+  moreAboutYou: "Or fill in these details",
+  moreAboutYouHint: "Name and age are enough if you would rather not type above. Other fields are optional.",
   findSchemes: "Find My Schemes",
-  needSomething: "Please speak or type a few words first.",
+  needSomething: "Please speak or type a few words, or fill in your name and age.",
   checking: "Saathi is checking your eligibility…",
   checkingHint: "This can take up to a minute. Please stay on this screen.",
   yourSchemes: "Schemes for you",
@@ -128,6 +129,7 @@ const en: Strings = {
   yes: "Yes",
   no: "No",
   tellUsSomething: "Your situation",
+  orDivider: "OR",
   voiceNotAvailable: "Speaking is not available in this browser. Please type instead.",
   back: "Back",
 };
@@ -142,10 +144,10 @@ const hi: Strings = {
   listening: "मैं सुन रहा हूँ… बोलिए",
   stopListening: "रोकें",
   orType: "या अपनी बात यहाँ लिखिए",
-  moreAboutYou: "कुछ और जानकारी जोड़ें (ज़रूरी नहीं)",
-  moreAboutYouHint: "आप इन्हें खाली छोड़ सकते हैं।",
+  moreAboutYou: "या ये विवरण भरें",
+  moreAboutYouHint: "अगर ऊपर लिखना न हो तो नाम और उम्र काफी हैं। बाकी जानकारी वैकल्पिक है।",
   findSchemes: "मेरी योजनाएँ खोजें",
-  needSomething: "कृपया पहले कुछ बोलिए या लिखिए।",
+  needSomething: "कृपया कुछ बोलिए या लिखिए, या अपना नाम और उम्र भरिए।",
   checking: "साथी आपकी पात्रता देख रहा है…",
   checkingHint: "इसमें एक मिनट लग सकता है। कृपया इसी स्क्रीन पर रहें।",
   yourSchemes: "आपके लिए योजनाएँ",
@@ -185,6 +187,7 @@ const hi: Strings = {
   yes: "हाँ",
   no: "नहीं",
   tellUsSomething: "आपकी स्थिति",
+  orDivider: "या",
   voiceNotAvailable: "इस ब्राउज़र में बोलना उपलब्ध नहीं है। कृपया लिखिए।",
   back: "पीछे",
 };
@@ -199,10 +202,10 @@ const mr: Strings = {
   listening: "मी ऐकतो आहे… बोला",
   stopListening: "थांबा",
   orType: "किंवा इथे लिहा",
-  moreAboutYou: "आणखी माहिती द्या (गरजेचे नाही)",
-  moreAboutYouHint: "तुम्ही हे रिकामे ठेवू शकता.",
+  moreAboutYou: "किंवा हे तपशील भरा",
+  moreAboutYouHint: "वर लिहायचे नसेल तर नाव आणि वय पुरेसे आहेत. बाकी माहिती ऐच्छिक आहे.",
   findSchemes: "माझ्या योजना शोधा",
-  needSomething: "कृपया आधी थोडे बोला किंवा लिहा.",
+  needSomething: "कृपया थोडे बोला किंवा लिहा, किंवा तुमचे नाव आणि वय भरा.",
   checking: "साथी तुमची पात्रता तपासतो आहे…",
   checkingHint: "याला एक मिनिट लागू शकतो. कृपया याच स्क्रीनवर थांबा.",
   yourSchemes: "तुमच्यासाठी योजना",
@@ -242,6 +245,7 @@ const mr: Strings = {
   yes: "होय",
   no: "नाही",
   tellUsSomething: "तुमची परिस्थिती",
+  orDivider: "किंवा",
   voiceNotAvailable: "या ब्राउझरमध्ये बोलणे उपलब्ध नाही. कृपया लिहा.",
   back: "मागे",
 };
@@ -256,8 +260,10 @@ const ta: Strings = {
   listening: "கேட்கிறேன்… பேசுங்கள்",
   stopListening: "நிறுத்து",
   orType: "அல்லது இங்கே தட்டச்சு செய்யுங்கள்",
-  moreAboutYou: "மேலும் விவரங்கள் (கட்டாயம் இல்லை)",
+  moreAboutYou: "அல்லது இந்த விவரங்களை நிரப்புங்கள்",
+  moreAboutYouHint: "மேலே எழுத விரும்பவில்லை என்றால் பெயரும் வயதும் போதும்.",
   findSchemes: "எனது திட்டங்களைத் தேடு",
+  needSomething: "பேசுங்கள் அல்லது எழுதுங்கள், அல்லது பெயரும் வயதும் நிரப்புங்கள்.",
   checking: "சாத்தி உங்கள் தகுதியைப் பார்க்கிறார்…",
   yourSchemes: "உங்களுக்கான திட்டங்கள்",
   whyYouQualify: "நீங்கள் ஏன் தகுதியானவர்",
@@ -271,6 +277,7 @@ const ta: Strings = {
   home: "முகப்பு",
   yes: "ஆம்",
   no: "இல்லை",
+  orDivider: "அல்லது",
   back: "பின்",
 };
 
@@ -283,7 +290,9 @@ const bn: Strings = {
   listening: "আমি শুনছি… বলুন",
   stopListening: "থামুন",
   orType: "অথবা এখানে লিখুন",
+  moreAboutYou: "অথবা এই তথ্য পূরণ করুন",
   findSchemes: "আমার প্রকল্প খুঁজুন",
+  needSomething: "কিছু বলুন বা লিখুন, অথবা নাম ও বয়স পূরণ করুন।",
   checking: "সাথী আপনার যোগ্যতা দেখছে…",
   yourSchemes: "আপনার জন্য প্রকল্প",
   whyYouQualify: "আপনি কেন যোগ্য",
@@ -297,6 +306,7 @@ const bn: Strings = {
   home: "হোম",
   yes: "হ্যাঁ",
   no: "না",
+  orDivider: "অথবা",
   back: "পিছনে",
 };
 
@@ -309,7 +319,9 @@ const te: Strings = {
   listening: "నేను వింటున్నాను… చెప్పండి",
   stopListening: "ఆపండి",
   orType: "లేదా ఇక్కడ టైప్ చేయండి",
+  moreAboutYou: "లేదా ఈ వివరాలు నింపండి",
   findSchemes: "నా పథకాలను వెతకండి",
+  needSomething: "మాట్లాడండి లేదా టైప్ చేయండి, లేదా పేరు మరియు వయస్సు నింపండి.",
   checking: "సాథి మీ అర్హతను చూస్తున్నారు…",
   yourSchemes: "మీ కోసం పథకాలు",
   whyYouQualify: "మీరు ఎందుకు అర్హులు",
@@ -323,6 +335,7 @@ const te: Strings = {
   home: "హోమ్",
   yes: "అవును",
   no: "కాదు",
+  orDivider: "లేదా",
   back: "వెనుకకు",
 };
 

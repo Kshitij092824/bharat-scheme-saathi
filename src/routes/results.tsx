@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronDown, MessageCircleHeart, RefreshCw, Volume2, VolumeX } from "lucide-react";
+import { MessageCircleHeart, RefreshCw, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSaathi } from "@/lib/saathi-store";
 import { findSchemes } from "@/lib/saathi-api";
+import { hasStructuredCore, situationFromFields, type Scheme } from "@/lib/saathi-types";
 import { useSpeechOutput, type SpeechSegment } from "@/lib/use-speech";
-import { cn } from "@/lib/utils";
-import type { Scheme } from "@/lib/saathi-types";
+import { STRINGS, type Language } from "@/lib/i18n";
 
 export const Route = createFileRoute("/results")({
   head: () => ({
@@ -29,22 +29,78 @@ export const Route = createFileRoute("/results")({
 });
 
 const EN_SPEECH = "en-IN";
+const EN_STRINGS = STRINGS.en;
+
+function pushBilingual(
+  segments: SpeechSegment[],
+  localText: string,
+  enText: string,
+  localLang: string,
+) {
+  const local = localText.trim();
+  const en = enText.trim();
+  const localIsEnglish = localLang.toLowerCase().startsWith("en");
+  if (local) segments.push({ text: local, lang: localLang });
+  if (!en) return;
+  if (localIsEnglish && en === local) return;
+  segments.push({ text: en, lang: EN_SPEECH });
+}
+
+function schemeSpeechSegments(
+  scheme: Scheme,
+  index: number | null,
+  language: Language,
+  whyLabel: string,
+  documentsLabel: string,
+): SpeechSegment[] {
+  const local = language.speech;
+  const segments: SpeechSegment[] = [];
+  const prefix = index == null ? "" : `${index + 1}. `;
+  pushBilingual(
+    segments,
+    `${prefix}${scheme.scheme_name_local}`,
+    `${prefix}${scheme.scheme_name_en}`,
+    local,
+  );
+  if (scheme.reason) {
+    pushBilingual(segments, whyLabel, EN_STRINGS.whyYouQualify, local);
+    pushBilingual(segments, scheme.reason, scheme.reason, local);
+  }
+  if (scheme.required_documents.length > 0) {
+    pushBilingual(segments, documentsLabel, EN_STRINGS.documentsNeeded, local);
+    for (const doc of scheme.required_documents) {
+      pushBilingual(segments, doc.local, doc.en, local);
+    }
+  }
+  return segments;
+}
 
 function ResultsScreen() {
   const { t, profile, language, setSchemes, setFollowUp } = useSaathi();
   const navigate = useNavigate();
   const { supported, speaking, speakSegments, stop } = useSpeechOutput(language.speech);
-
-  const situation = profile.situation_text.trim();
+  const [readingId, setReadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!situation) void navigate({ to: "/talk" });
-  }, [situation, navigate]);
+    if (!speaking) setReadingId(null);
+  }, [speaking]);
+
+  const typed = profile.situation_text.trim();
+  const effectiveSituation = typed || situationFromFields(profile);
+  const canLookup = typed.length > 0 || hasStructuredCore(profile);
+
+  useEffect(() => {
+    if (!canLookup) void navigate({ to: "/talk" });
+  }, [canLookup, navigate]);
 
   const query = useQuery({
-    queryKey: ["schemes", situation, profile.age, profile.annual_income],
-    queryFn: () => findSchemes(profile),
-    enabled: situation.length > 0,
+    queryKey: ["schemes", effectiveSituation, profile.age, profile.annual_income],
+    queryFn: () =>
+      findSchemes({
+        ...profile,
+        situation_text: effectiveSituation,
+      }),
+    enabled: canLookup && effectiveSituation.length > 0,
     retry: false,
     staleTime: Infinity,
   });
@@ -58,29 +114,18 @@ function ResultsScreen() {
   const readAloud = () => {
     const schemes = query.data?.schemes ?? [];
     if (schemes.length === 0) {
+      setReadingId("all");
       speakSegments([{ text: t.noMatches, lang: language.speech }]);
       return;
     }
-    const local = language.speech;
-    const segments: SpeechSegment[] = [{ text: t.yourSchemes, lang: local }];
+    const segments: SpeechSegment[] = [];
+    pushBilingual(segments, t.yourSchemes, EN_STRINGS.yourSchemes, language.speech);
     schemes.forEach((scheme, index) => {
-      segments.push({ text: `${index + 1}. ${scheme.scheme_name_local}`, lang: local });
-      if (scheme.scheme_name_en && scheme.scheme_name_en !== scheme.scheme_name_local) {
-        segments.push({ text: scheme.scheme_name_en, lang: EN_SPEECH });
-      }
-      if (scheme.reason) {
-        segments.push({ text: t.whyYouQualify, lang: local });
-        segments.push({ text: scheme.reason, lang: local });
-        segments.push({ text: scheme.reason, lang: EN_SPEECH });
-      }
-      if (scheme.required_documents.length > 0) {
-        segments.push({ text: t.documentsNeeded, lang: local });
-        for (const doc of scheme.required_documents) {
-          segments.push({ text: doc.local, lang: local });
-          if (doc.en && doc.en !== doc.local) segments.push({ text: doc.en, lang: EN_SPEECH });
-        }
-      }
+      segments.push(
+        ...schemeSpeechSegments(scheme, index, language, t.whyYouQualify, t.documentsNeeded),
+      );
     });
+    setReadingId("all");
     speakSegments(segments);
   };
 
@@ -122,10 +167,10 @@ function ResultsScreen() {
               size="big"
               variant="calm"
               className="mt-5 w-full"
-              onClick={speaking ? stop : readAloud}
+              onClick={speaking && readingId === "all" ? stop : readAloud}
             >
-              {speaking ? <VolumeX aria-hidden /> : <Volume2 aria-hidden />}
-              {speaking ? t.stopReading : t.readAloud}
+              {speaking && readingId === "all" ? <VolumeX aria-hidden /> : <Volume2 aria-hidden />}
+              {speaking && readingId === "all" ? t.stopReading : t.readAloud}
             </Button>
           )}
           <ul className="mt-6 space-y-5">
@@ -135,6 +180,23 @@ function ResultsScreen() {
                   scheme={scheme}
                   whyLabel={t.whyYouQualify}
                   documentsLabel={t.documentsNeeded}
+                  readLabel={t.readAloud}
+                  stopLabel={t.stopReading}
+                  speaking={speaking && readingId === scheme.scheme_id}
+                  speechSupported={supported}
+                  onRead={() => {
+                    setReadingId(scheme.scheme_id);
+                    speakSegments(
+                      schemeSpeechSegments(
+                        scheme,
+                        null,
+                        language,
+                        t.whyYouQualify,
+                        t.documentsNeeded,
+                      ),
+                    );
+                  }}
+                  onStop={stop}
                 />
               </li>
             ))}
@@ -156,51 +218,59 @@ function SchemeCard({
   scheme,
   whyLabel,
   documentsLabel,
+  readLabel,
+  stopLabel,
+  speaking,
+  speechSupported,
+  onRead,
+  onStop,
 }: {
   scheme: Scheme;
   whyLabel: string;
   documentsLabel: string;
+  readLabel: string;
+  stopLabel: string;
+  speaking: boolean;
+  speechSupported: boolean;
+  onRead: () => void;
+  onStop: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const showEnglishName =
     scheme.scheme_name_en.length > 0 && scheme.scheme_name_en !== scheme.scheme_name_local;
 
   return (
     <article className="rounded-2xl border-2 border-border bg-card p-5 shadow-sm">
-      <h2 className="text-primary">{scheme.scheme_name_local}</h2>
+      <h2 className="text-2xl font-bold leading-snug text-primary">{scheme.scheme_name_local}</h2>
       {showEnglishName && (
-        <p className="mt-1 text-lg font-semibold text-muted-foreground">{scheme.scheme_name_en}</p>
+        <p className="mt-1 text-base font-medium text-muted-foreground">{scheme.scheme_name_en}</p>
       )}
       <p className="mt-3 text-base font-semibold text-muted-foreground">{whyLabel}</p>
       <p className="mt-1 text-xl">{scheme.reason}</p>
 
       {scheme.required_documents.length > 0 && (
-        <div className="mt-4 border-t-2 border-border pt-2">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            className="flex min-h-14 w-full items-center justify-between gap-3 text-left text-lg font-semibold"
-          >
-            {documentsLabel}
-            <ChevronDown
-              aria-hidden
-              className={cn("size-7 transition-transform", open && "rotate-180")}
-            />
-          </button>
-          {open && (
-            <ul className="mt-2 list-disc space-y-3 pl-6 text-xl">
-              {scheme.required_documents.map((doc, index) => (
+        <div className="mt-4 border-t-2 border-border pt-4">
+          <h3 className="text-lg font-semibold">{documentsLabel}</h3>
+          <ul className="mt-3 list-disc space-y-3 pl-6">
+            {scheme.required_documents.map((doc, index) => {
+              const showEn = doc.en.length > 0 && doc.en !== doc.local;
+              return (
                 <li key={`${scheme.scheme_id}-doc-${index}`}>
-                  <span className="block">{doc.local}</span>
-                  {doc.en && doc.en !== doc.local && (
+                  <span className="block text-xl font-medium">{doc.local}</span>
+                  {showEn && (
                     <span className="block text-base text-muted-foreground">{doc.en}</span>
                   )}
                 </li>
-              ))}
-            </ul>
-          )}
+              );
+            })}
+          </ul>
         </div>
+      )}
+
+      {speechSupported && (
+        <Button size="big" variant="calm" className="mt-5 w-full" onClick={speaking ? onStop : onRead}>
+          {speaking ? <VolumeX aria-hidden /> : <Volume2 aria-hidden />}
+          {speaking ? stopLabel : readLabel}
+        </Button>
       )}
     </article>
   );

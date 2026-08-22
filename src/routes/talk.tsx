@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { ChevronDown, Mic, Search, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSaathi } from "@/lib/saathi-store";
+import { hasStructuredCore, situationFromFields } from "@/lib/saathi-types";
 import { useSpeechInput } from "@/lib/use-speech";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/talk")({
 function TalkScreen() {
   const { t, language, profile, updateProfile, setSchemes } = useSaathi();
   const navigate = useNavigate();
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
   const [warning, setWarning] = useState(false);
 
   const onText = useCallback(
@@ -44,9 +45,14 @@ function TalkScreen() {
   const { supported, listening, start, stop } = useSpeechInput(language.speech, onText);
 
   const submit = () => {
-    if (!profile.situation_text.trim()) {
+    const typed = profile.situation_text.trim();
+    const structuredOk = hasStructuredCore(profile);
+    if (!typed && !structuredOk) {
       setWarning(true);
       return;
+    }
+    if (!typed && structuredOk) {
+      updateProfile({ situation_text: situationFromFields(profile) });
     }
     setSchemes(null);
     void navigate({ to: "/results" });
@@ -96,6 +102,12 @@ function TalkScreen() {
         />
       </div>
 
+      <div className="mt-8 flex items-center gap-4" role="separator" aria-label={t.orDivider}>
+        <span className="h-0.5 flex-1 bg-border" />
+        <span className="text-lg font-bold tracking-wide text-muted-foreground">{t.orDivider}</span>
+        <span className="h-0.5 flex-1 bg-border" />
+      </div>
+
       <div className="mt-6 rounded-2xl border-2 border-border bg-card">
         <button
           type="button"
@@ -117,12 +129,18 @@ function TalkScreen() {
             <TextField
               label={t.name}
               value={profile.name ?? ""}
-              onChange={(v) => updateProfile({ name: v })}
+              onChange={(v) => {
+                updateProfile({ name: v });
+                setWarning(false);
+              }}
             />
             <NumberField
               label={t.age}
               value={profile.age}
-              onChange={(v) => updateProfile({ age: v })}
+              onChange={(v) => {
+                updateProfile({ age: v });
+                setWarning(false);
+              }}
             />
             <ChoiceField
               label={t.gender}
