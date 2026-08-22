@@ -52,6 +52,10 @@ export interface Strings {
   notify: (name: string) => string;
   notifyWhatsApp: (name: string) => string;
   notifyMessage: (name?: string) => string;
+  lookUpCitizen: string;
+  lookUpCitizenHint: string;
+  findCitizen: string;
+  citizenNotFound: string;
   home: string;
   name: string;
   age: string;
@@ -116,6 +120,10 @@ const en: Strings = {
     name
       ? `I'm checking in — ${name} may need some help, could you reach out to them?`
       : "I'm checking in — someone you care for may need some help, could you reach out to them?",
+  lookUpCitizen: "Look up a citizen",
+  lookUpCitizenHint: "For a helper using another phone — type their number to find their details.",
+  findCitizen: "Find",
+  citizenNotFound: "I could not find anyone with that number.",
   home: "Home",
   name: "Name",
   age: "Age",
@@ -179,6 +187,10 @@ const hi: Strings = {
     name
       ? `मैं हाल-चाल पूछ रहा हूँ — ${name} को कुछ मदद चाहिए हो सकती है, क्या आप उनसे बात कर सकते हैं?`
       : "मैं हाल-चाल पूछ रहा हूँ — आपके परिजन को कुछ मदद चाहिए हो सकती है, क्या आप उनसे बात कर सकते हैं?",
+  lookUpCitizen: "नागरिक खोजें",
+  lookUpCitizenHint: "अगर आप किसी और के फ़ोन से मदद कर रहे हैं — उनका नंबर लिखकर विवरण देखें।",
+  findCitizen: "खोजें",
+  citizenNotFound: "इस नंबर पर कोई नहीं मिला।",
   home: "मुख्य पृष्ठ",
   name: "नाम",
   age: "उम्र",
@@ -242,6 +254,10 @@ const mr: Strings = {
     name
       ? `मी विचारपूस करतो आहे — ${name} यांना थोडी मदत लागू शकते, तुम्ही त्यांच्याशी संपर्क साधाल का?`
       : "मी विचारपूस करतो आहे — तुमच्या प्रिय व्यक्तीला थोडी मदत लागू शकते, तुम्ही त्यांच्याशी संपर्क साधाल का?",
+  lookUpCitizen: "नागरिक शोधा",
+  lookUpCitizenHint: "दुसऱ्या फोनवरून मदत करत असाल तर त्यांचा क्रमांक टाकून तपशील पहा.",
+  findCitizen: "शोधा",
+  citizenNotFound: "या क्रमांकावर कोणी सापडले नाही.",
   home: "मुख्यपृष्ठ",
   name: "नाव",
   age: "वय",

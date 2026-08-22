@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { MessageCircle, MessageSquareHeart, PhoneCall, Smile } from "lucide-react";
+import { MessageCircle, MessageSquareHeart, PhoneCall, Search, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { lookupCitizen } from "@/lib/saathi-api";
+import { lookupCitizen, type CitizenLookup } from "@/lib/saathi-api";
 import { getSavedPhone } from "@/lib/saathi-phone";
 import { useSaathi } from "@/lib/saathi-store";
 
@@ -31,7 +31,6 @@ function smsHref(phone: string, body: string): string {
   const encoded = encodeURIComponent(body);
   const ios =
     typeof navigator !== "undefined" && /iPad|iPhone|iPod/i.test(navigator.userAgent);
-  // iOS uses &body; Android uses ?body.
   return ios ? `sms:${number}&body=${encoded}` : `sms:${number}?body=${encoded}`;
 }
 
@@ -42,38 +41,105 @@ function whatsappHref(phone: string, body: string): string {
   return `https://wa.me/${digits}?text=${encodeURIComponent(body)}`;
 }
 
+function hasLookupDetails(row: CitizenLookup | undefined): boolean {
+  if (!row) return false;
+  return Boolean(row.name || row.family_contact_name || row.family_contact_phone);
+}
+
 function CheckInScreen() {
   const { t, profile, followUp } = useSaathi();
   const [mood, setMood] = useState<"well" | "help" | null>(followUp ? "help" : null);
   const [savedPhone, setSavedPhone] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [manualPhone, setManualPhone] = useState("");
 
   useEffect(() => {
     setSavedPhone(getSavedPhone());
   }, []);
 
-  const lookup = useQuery({
-    queryKey: ["citizen-lookup", savedPhone],
+  const autoLookup = useQuery({
+    queryKey: ["citizen-lookup", "auto", savedPhone],
     queryFn: () => lookupCitizen(savedPhone),
     enabled: savedPhone.length > 0,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
 
-  const citizenName =
-    lookup.data?.name?.trim() || profile.name?.trim() || undefined;
-  const familyName =
-    lookup.data?.family_contact_name?.trim() || profile.family_contact_name?.trim() || "";
-  const familyPhone =
-    lookup.data?.family_contact_phone?.trim() || profile.family_contact_phone?.trim() || "";
+  const manualLookup = useQuery({
+    queryKey: ["citizen-lookup", "manual", manualPhone],
+    queryFn: () => lookupCitizen(manualPhone),
+    enabled: manualPhone.length > 0,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const usingManual = manualPhone.length > 0;
+  const lookup: CitizenLookup | undefined = usingManual ? manualLookup.data : autoLookup.data;
+
+  const citizenName = usingManual
+    ? lookup?.name?.trim() || undefined
+    : lookup?.name?.trim() || profile.name?.trim() || undefined;
+  const familyName = usingManual
+    ? lookup?.family_contact_name?.trim() || ""
+    : lookup?.family_contact_name?.trim() || profile.family_contact_name?.trim() || "";
+  const familyPhone = usingManual
+    ? lookup?.family_contact_phone?.trim() || ""
+    : lookup?.family_contact_phone?.trim() || profile.family_contact_phone?.trim() || "";
 
   const showHelp = mood === "help";
   const hasFamilyContact = familyName.length > 0 && familyPhone.length > 0;
   const message = t.notifyMessage(citizenName);
+  const manualPending = usingManual && manualLookup.isFetching;
+  const manualMissed =
+    usingManual && manualLookup.isSuccess && !hasLookupDetails(manualLookup.data);
+  const manualFailed = usingManual && manualLookup.isError;
+
+  const findCitizen = () => {
+    const phone = phoneInput.trim();
+    if (!phone) return;
+    setManualPhone(phone);
+  };
 
   return (
     <main className="saathi-page">
       <h1 className="text-primary">{t.checkIn}</h1>
       <p className="mt-3 text-2xl">{t.checkInGreeting(citizenName)}</p>
+
+      <form
+        className="mt-6 rounded-2xl border-2 border-border bg-card p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          findCitizen();
+        }}
+      >
+        <label htmlFor="citizen-lookup-phone" className="text-lg font-semibold">
+          {t.lookUpCitizen}
+        </label>
+        <p className="mt-1 text-base text-muted-foreground">{t.lookUpCitizenHint}</p>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+          <input
+            id="citizen-lookup-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            className="field-big"
+            placeholder={t.phone}
+            value={phoneInput}
+            onChange={(event) => setPhoneInput(event.target.value)}
+          />
+          <Button type="submit" size="big" className="shrink-0 sm:min-w-28" disabled={manualPending}>
+            <Search aria-hidden />
+            {t.findCitizen}
+          </Button>
+        </div>
+        {manualPending && <p className="mt-3 text-lg">{t.checking}</p>}
+        {manualMissed && (
+          <p className="mt-3 text-lg font-semibold text-destructive">{t.citizenNotFound}</p>
+        )}
+        {manualFailed && (
+          <p className="mt-3 text-lg font-semibold text-destructive">{t.somethingWentWrong}</p>
+        )}
+      </form>
 
       <div className="mt-8 grid gap-4">
         <Button size="huge" variant="leaf" onClick={() => setMood("well")}>
