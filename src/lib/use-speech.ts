@@ -21,6 +21,26 @@ function getRecognitionCtor(): (new () => RecognitionLike) | null {
     | undefined) ?? null;
 }
 
+type RecognitionResultLike = ArrayLike<{ transcript?: string }> & { isFinal?: boolean };
+
+/** Pull only *new* final phrases from a SpeechRecognition event. */
+export function collectNewFinalTranscripts(
+  results: ArrayLike<RecognitionResultLike>,
+  alreadyProcessed: number,
+): { text: string; nextIndex: number } {
+  let nextIndex = alreadyProcessed;
+  const parts: string[] = [];
+  for (let i = alreadyProcessed; i < results.length; i++) {
+    const result = results[i];
+    // Strict: never treat interim / missing-final as committed text.
+    if (!result || result.isFinal !== true) break;
+    nextIndex = i + 1;
+    const piece = (result[0]?.transcript ?? "").replace(/\s+/g, " ").trim();
+    if (piece) parts.push(piece);
+  }
+  return { text: parts.join(" "), nextIndex };
+}
+
 /**
  * Speech-to-text via the browser's Web Speech API.
  * Uses continuous mode and restarts the session if the engine stops on its own
@@ -31,6 +51,10 @@ export function useSpeechInput(lang: string, onText: (text: string) => void) {
   const [listening, setListening] = useState(false);
   const ref = useRef<RecognitionLike | null>(null);
   const wantListening = useRef(false);
+  /** True only between a successful start() and the matching onend. */
+  const sessionRunning = useRef(false);
+  const processedIndex = useRef(0);
+  const lastCommitted = useRef("");
   const restartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onTextRef = useRef(onText);
   const langRef = useRef(lang);
@@ -44,14 +68,21 @@ export function useSpeechInput(lang: string, onText: (text: string) => void) {
     }
   };
 
+  const scheduleRestart = useCallback((startSession: () => void) => {
+    clearRestart();
+    restartTimer.current = setTimeout(() => {
+      restartTimer.current = null;
+      if (wantListening.current && !sessionRunning.current) startSession();
+    }, 280);
+  }, []);
+
   const stop = useCallback(() => {
     wantListening.current = false;
     clearRestart();
     const recognition = ref.current;
     if (recognition) {
-      recognition.onend = null;
-      recognition.onerror = null;
       recognition.onresult = null;
+      recognition.onerror = null;
       try {
         recognition.stop();
       } catch {
@@ -68,40 +99,30 @@ export function useSpeechInput(lang: string, onText: (text: string) => void) {
   const startSession = useCallback(() => {
     const Ctor = getRecognitionCtor();
     if (!Ctor || !wantListening.current) return;
+    if (sessionRunning.current) return;
 
     clearRestart();
-    const previous = ref.current;
-    if (previous) {
-      previous.onend = null;
-      previous.onerror = null;
-      previous.onresult = null;
-      try {
-        previous.abort();
-      } catch {
-        /* ignore */
-      }
-    }
+    processedIndex.current = 0;
+    lastCommitted.current = "";
 
     const recognition = new Ctor();
     recognition.lang = langRef.current;
     recognition.continuous = true;
-    recognition.interimResults = true;
+    // Finals only in the saved transcript. Android Chrome repeats words if
+    // evolving interim guesses are appended (or mis-tagged as final).
+    recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: unknown) => {
-      const e = event as {
-        results?: ArrayLike<ArrayLike<{ transcript?: string }> & { isFinal?: boolean }>;
-        resultIndex?: number;
-      };
+      const e = event as { results?: ArrayLike<RecognitionResultLike> };
       const results = e.results;
       if (!results) return;
-      let text = "";
-      for (let i = e.resultIndex ?? 0; i < results.length; i++) {
-        const result = results[i];
-        if (!result || result.isFinal === false) continue;
-        text += `${result[0]?.transcript ?? ""} `;
-      }
-      if (text.trim()) onTextRef.current(text.trim());
+      const { text, nextIndex } = collectNewFinalTranscripts(results, processedIndex.current);
+      processedIndex.current = nextIndex;
+      const piece = text.trim();
+      if (!piece || piece === lastCommitted.current) return;
+      lastCommitted.current = piece;
+      onTextRef.current(piece);
     };
 
     recognition.onerror = (event?: unknown) => {
@@ -111,43 +132,36 @@ export function useSpeechInput(lang: string, onText: (text: string) => void) {
         clearRestart();
         setListening(false);
       }
-      // no-speech, network, aborted, etc. are handled by onend restart when still wanted.
+      // no-speech / aborted / network: wait for onend, then restart if wanted.
     };
 
     recognition.onend = () => {
+      sessionRunning.current = false;
+      if (ref.current === recognition) ref.current = null;
       if (!wantListening.current) {
         setListening(false);
         return;
       }
-      // Engine ended on a pause or timeout — start again without user action.
-      restartTimer.current = setTimeout(() => {
-        restartTimer.current = null;
-        if (wantListening.current) startSession();
-      }, 120);
+      // Previous session has fully ended — only now is a restart allowed.
+      scheduleRestart(startSession);
     };
 
     ref.current = recognition;
     try {
       recognition.start();
+      sessionRunning.current = true;
       setListening(true);
     } catch {
-      restartTimer.current = setTimeout(() => {
-        restartTimer.current = null;
-        if (!wantListening.current) return;
-        try {
-          recognition.start();
-          setListening(true);
-        } catch {
-          /* ignore */
-        }
-      }, 250);
+      sessionRunning.current = false;
+      scheduleRestart(startSession);
     }
-  }, []);
+  }, [scheduleRestart]);
 
   useEffect(() => {
     setSupported(getRecognitionCtor() !== null);
     return () => {
       wantListening.current = false;
+      sessionRunning.current = false;
       clearRestart();
       try {
         ref.current?.abort();
@@ -161,7 +175,8 @@ export function useSpeechInput(lang: string, onText: (text: string) => void) {
   const start = useCallback(() => {
     if (wantListening.current) return;
     wantListening.current = true;
-    startSession();
+    if (!sessionRunning.current) startSession();
+    // If a session is still winding down, onend will start the next one.
   }, [startSession]);
 
   return { supported, listening, start, stop };
