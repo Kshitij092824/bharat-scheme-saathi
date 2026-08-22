@@ -5,7 +5,7 @@ import { ChevronDown, MessageCircleHeart, RefreshCw, Volume2, VolumeX } from "lu
 import { Button } from "@/components/ui/button";
 import { useSaathi } from "@/lib/saathi-store";
 import { findSchemes } from "@/lib/saathi-api";
-import { useSpeechOutput } from "@/lib/use-speech";
+import { useSpeechOutput, type SpeechSegment } from "@/lib/use-speech";
 import { cn } from "@/lib/utils";
 import type { Scheme } from "@/lib/saathi-types";
 
@@ -28,10 +28,12 @@ export const Route = createFileRoute("/results")({
   component: ResultsScreen,
 });
 
+const EN_SPEECH = "en-IN";
+
 function ResultsScreen() {
   const { t, profile, language, setSchemes, setFollowUp } = useSaathi();
   const navigate = useNavigate();
-  const { supported, speaking, speak, stop } = useSpeechOutput(language.speech);
+  const { supported, speaking, speakSegments, stop } = useSpeechOutput(language.speech);
 
   const situation = profile.situation_text.trim();
 
@@ -55,12 +57,31 @@ function ResultsScreen() {
 
   const readAloud = () => {
     const schemes = query.data?.schemes ?? [];
-    const text = schemes.length
-      ? `${t.yourSchemes}. ${schemes
-          .map((s, i) => `${i + 1}. ${s.scheme_name}. ${s.reason}`)
-          .join(" ")}`
-      : t.noMatches;
-    speak(text);
+    if (schemes.length === 0) {
+      speakSegments([{ text: t.noMatches, lang: language.speech }]);
+      return;
+    }
+    const local = language.speech;
+    const segments: SpeechSegment[] = [{ text: t.yourSchemes, lang: local }];
+    schemes.forEach((scheme, index) => {
+      segments.push({ text: `${index + 1}. ${scheme.scheme_name_local}`, lang: local });
+      if (scheme.scheme_name_en && scheme.scheme_name_en !== scheme.scheme_name_local) {
+        segments.push({ text: scheme.scheme_name_en, lang: EN_SPEECH });
+      }
+      if (scheme.reason) {
+        segments.push({ text: t.whyYouQualify, lang: local });
+        segments.push({ text: scheme.reason, lang: local });
+        segments.push({ text: scheme.reason, lang: EN_SPEECH });
+      }
+      if (scheme.required_documents.length > 0) {
+        segments.push({ text: t.documentsNeeded, lang: local });
+        for (const doc of scheme.required_documents) {
+          segments.push({ text: doc.local, lang: local });
+          if (doc.en && doc.en !== doc.local) segments.push({ text: doc.en, lang: EN_SPEECH });
+        }
+      }
+    });
+    speakSegments(segments);
   };
 
   return (
@@ -141,11 +162,16 @@ function SchemeCard({
   documentsLabel: string;
 }) {
   const [open, setOpen] = useState(false);
+  const showEnglishName =
+    scheme.scheme_name_en.length > 0 && scheme.scheme_name_en !== scheme.scheme_name_local;
 
   return (
     <article className="rounded-2xl border-2 border-border bg-card p-5 shadow-sm">
-      <h2 className="text-primary">{scheme.scheme_name}</h2>
-      <p className="mt-1 text-base font-semibold text-muted-foreground">{whyLabel}</p>
+      <h2 className="text-primary">{scheme.scheme_name_local}</h2>
+      {showEnglishName && (
+        <p className="mt-1 text-lg font-semibold text-muted-foreground">{scheme.scheme_name_en}</p>
+      )}
+      <p className="mt-3 text-base font-semibold text-muted-foreground">{whyLabel}</p>
       <p className="mt-1 text-xl">{scheme.reason}</p>
 
       {scheme.required_documents.length > 0 && (
@@ -163,9 +189,14 @@ function SchemeCard({
             />
           </button>
           {open && (
-            <ul className="mt-2 list-disc space-y-2 pl-6 text-xl">
-              {scheme.required_documents.map((doc) => (
-                <li key={doc}>{doc}</li>
+            <ul className="mt-2 list-disc space-y-3 pl-6 text-xl">
+              {scheme.required_documents.map((doc, index) => (
+                <li key={`${scheme.scheme_id}-doc-${index}`}>
+                  <span className="block">{doc.local}</span>
+                  {doc.en && doc.en !== doc.local && (
+                    <span className="block text-base text-muted-foreground">{doc.en}</span>
+                  )}
+                </li>
               ))}
             </ul>
           )}

@@ -1,4 +1,4 @@
-import type { CitizenProfile, Scheme } from "./saathi-types";
+import type { BilingualText, CitizenProfile, Scheme } from "./saathi-types";
 
 /**
  * The n8n webhook URL. Set VITE_N8N_WEBHOOK_URL in the project environment.
@@ -40,6 +40,14 @@ function cleanPayload(profile: CitizenProfile): Record<string, unknown> {
   return body;
 }
 
+function toBilingual(item: unknown): BilingualText {
+  if (typeof item === "string") return { local: item, en: item };
+  const d = (item ?? {}) as Record<string, unknown>;
+  const en = String(d["en"] ?? d["english"] ?? "").trim();
+  const local = String(d["local"] ?? d["name_local"] ?? "").trim();
+  return { local: local || en, en: en || local };
+}
+
 function normalise(raw: unknown): Scheme[] {
   const list = Array.isArray(raw)
     ? raw
@@ -53,28 +61,43 @@ function normalise(raw: unknown): Scheme[] {
     .map((item, index) => {
       const s = (item ?? {}) as Record<string, unknown>;
       const docs = s["required_documents"];
+      const legacyName = String(s["scheme_name"] ?? "").trim();
+      const nameEn = String(s["scheme_name_en"] ?? legacyName).trim();
+      const nameLocal = String(s["scheme_name_local"] ?? (legacyName || nameEn)).trim();
       return {
         scheme_id: String(s["scheme_id"] ?? `scheme-${index}`),
-        scheme_name: String(s["scheme_name"] ?? "").trim(),
+        scheme_name_en: nameEn || nameLocal,
+        scheme_name_local: nameLocal || nameEn,
         reason: String(s["reason"] ?? "").trim(),
-        required_documents: Array.isArray(docs) ? docs.map((d) => String(d)) : [],
+        required_documents: Array.isArray(docs) ? docs.map(toBilingual) : [],
       } satisfies Scheme;
     })
-    .filter((s) => s.scheme_name.length > 0);
+    .filter((s) => s.scheme_name_local.length > 0 || s.scheme_name_en.length > 0);
 }
 
 const DEMO_SCHEMES: Scheme[] = [
   {
     scheme_id: "demo-ipgs",
-    scheme_name: "Indira Gandhi National Old Age Pension",
+    scheme_name_en: "Indira Gandhi National Old Age Pension",
+    scheme_name_local: "इंदिरा गांधी राष्ट्रीय वृद्धावस्था पेंशन",
     reason: "You are above 60 years of age and told us money is tight at home.",
-    required_documents: ["Aadhaar card", "Age proof", "Bank passbook", "BPL ration card"],
+    required_documents: [
+      { en: "Aadhaar card", local: "आधार कार्ड" },
+      { en: "Age proof", local: "वयाचा पुरावा" },
+      { en: "Bank passbook", local: "बँक पासबुक" },
+      { en: "BPL ration card", local: "बीपीएल शिधापत्रिका" },
+    ],
   },
   {
     scheme_id: "demo-ayushman",
-    scheme_name: "Ayushman Bharat health cover",
+    scheme_name_en: "Ayushman Bharat health cover",
+    scheme_name_local: "आयुष्मान भारत आरोग्य विमा",
     reason: "Your family income is low, so hospital treatment can be free for you.",
-    required_documents: ["Aadhaar card", "Ration card", "Mobile number"],
+    required_documents: [
+      { en: "Aadhaar card", local: "आधार कार्ड" },
+      { en: "Ration card", local: "शिधापत्रिका" },
+      { en: "Mobile number", local: "मोबाईल क्रमांक" },
+    ],
   },
 ];
 
