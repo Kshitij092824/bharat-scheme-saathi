@@ -1,24 +1,71 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import saathiIcon from "@/assets/saathi-icon.png";
+import { Button } from "@/components/ui/button";
+import { LANGUAGES, type LanguageCode } from "@/lib/i18n";
+import { useSaathi } from "@/lib/saathi-store";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Bharat Saathi AI — Find the schemes you deserve" },
+      {
+        name: "description",
+        content:
+          "A simple, voice-first helper for elderly Indians: speak in your language and find the government welfare schemes you qualify for.",
+      },
+      { property: "og:title", content: "Bharat Saathi AI — Find the schemes you deserve" },
+      {
+        property: "og:description",
+        content:
+          "Speak in your language and Saathi finds the government welfare schemes you may qualify for.",
+      },
+    ],
+  }),
+  component: WelcomeScreen,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function WelcomeScreen() {
+  const { setLanguage, t } = useSaathi();
+  const navigate = useNavigate();
+
+  const choose = (code: LanguageCode) => {
+    setLanguage(code);
+    void navigate({ to: "/talk" });
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="saathi-page">
+      <div className="flex flex-col items-center text-center">
+        <img
+          src={saathiIcon}
+          alt="Two hands holding a marigold flower"
+          width={512}
+          height={512}
+          className="size-40 sm:size-48"
+        />
+        <h1 className="mt-2 text-4xl text-primary">Bharat Saathi AI</h1>
+        <p className="mt-2 text-xl text-muted-foreground">{t.tagline}</p>
+      </div>
+
+      <h2 className="mt-10 text-center">{t.chooseLanguage} / अपनी भाषा चुनें</h2>
+
+      <ul className="mt-5 grid gap-4 sm:grid-cols-2">
+        {LANGUAGES.map((language) => (
+          <li key={language.code}>
+            <Button
+              variant="calm"
+              size="huge"
+              className="flex-col gap-0 leading-tight"
+              onClick={() => choose(language.code)}
+            >
+              <span className="text-3xl">{language.label}</span>
+              <span className="text-base font-medium text-muted-foreground">
+                {language.english}
+              </span>
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </main>
   );
 }

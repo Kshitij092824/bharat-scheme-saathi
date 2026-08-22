@@ -1,0 +1,15 @@
+{
+  "name": "Bharat Saathi AI",
+  "short_name": "Saathi",
+  "description": "Find government welfare schemes you qualify for, and stay connected.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff7eb",
+  "theme_color": "#c2410c",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
