@@ -1,14 +1,14 @@
 export interface CitizenProfile {
-  name?: string;
-  age?: number;
-  gender?: string;
-  is_widow?: boolean;
-  disability_percent?: number;
-  is_bpl?: boolean;
-  annual_income?: number;
-  phone?: string;
-  family_contact_name?: string;
-  family_contact_phone?: string;
+  name?: string | undefined;
+  age?: number | undefined;
+  gender?: string | undefined;
+  is_widow?: boolean | undefined;
+  disability_percent?: number | undefined;
+  is_bpl?: boolean | undefined;
+  annual_income?: number | undefined;
+  phone?: string | undefined;
+  family_contact_name?: string | undefined;
+  family_contact_phone?: string | undefined;
   situation_text: string;
 }
 

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CheckInRouteImport } from './routes/check-in'
+import { Route as ResultsRouteImport } from './routes/results'
 import { Route as TalkRouteImport } from './routes/talk'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const CheckInRoute = CheckInRouteImport.update({
   path: '/check-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResultsRoute = ResultsRouteImport.update({
+  id: '/results',
+  path: '/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TalkRoute = TalkRouteImport.update({
   id: '/talk',
   path: '/talk',
@@ -32,30 +38,34 @@ const TalkRoute = TalkRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/check-in': typeof CheckInRoute
+  '/results': typeof ResultsRoute
   '/talk': typeof TalkRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/check-in': typeof CheckInRoute
+  '/results': typeof ResultsRoute
   '/talk': typeof TalkRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/check-in': typeof CheckInRoute
+  '/results': typeof ResultsRoute
   '/talk': typeof TalkRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/check-in' | '/talk'
+  fullPaths: '/' | '/check-in' | '/results' | '/talk'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/check-in' | '/talk'
-  id: '__root__' | '/' | '/check-in' | '/talk'
+  to: '/' | '/check-in' | '/results' | '/talk'
+  id: '__root__' | '/' | '/check-in' | '/results' | '/talk'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CheckInRoute: typeof CheckInRoute
+  ResultsRoute: typeof ResultsRoute
   TalkRoute: typeof TalkRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/results': {
+      id: '/results'
+      path: '/results'
+      fullPath: '/results'
+      preLoaderRoute: typeof ResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/talk': {
       id: '/talk'
       path: '/talk'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CheckInRoute: CheckInRoute,
+  ResultsRoute: ResultsRoute,
   TalkRoute: TalkRoute,
 }
 export const routeTree = rootRouteImport
