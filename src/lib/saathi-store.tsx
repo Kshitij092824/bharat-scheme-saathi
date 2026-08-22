@@ -7,7 +7,7 @@ interface SaathiState {
   setLanguage: (code: LanguageCode) => void;
   t: Strings;
   profile: CitizenProfile;
-  updateProfile: (patch: { [K in keyof CitizenProfile]?: CitizenProfile[K] | undefined }) => void;
+  updateProfile: (patch: Partial<CitizenProfile>) => void;
   schemes: Scheme[] | null;
   setSchemes: (schemes: Scheme[] | null) => void;
   followUp: boolean;
