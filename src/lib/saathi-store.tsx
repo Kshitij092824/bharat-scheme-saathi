@@ -23,7 +23,9 @@ export function SaathiProvider({ children }: { children: ReactNode }) {
   const [followUp, setFollowUp] = useState(false);
 
   const value = useMemo<SaathiState>(() => {
-    const language = LANGUAGES.find((l) => l.code === code) ?? LANGUAGES[2];
+    const language: Language =
+      LANGUAGES.find((l) => l.code === code) ??
+      ({ code: "en", label: "English", english: "English", speech: "en-IN" } as Language);
     return {
       language,
       setLanguage: setCode,
