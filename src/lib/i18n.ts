@@ -50,6 +50,7 @@ export interface Strings {
   helpline: string;
   callHelpline: string;
   notify: (name: string) => string;
+  notifyWhatsApp: (name: string) => string;
   notifyMessage: (name?: string) => string;
   home: string;
   name: string;
@@ -110,8 +111,11 @@ const en: Strings = {
   helpline: "National Elder Line",
   callHelpline: "Call 14567 now",
   notify: (name) => `Notify ${name}`,
+  notifyWhatsApp: (name) => `WhatsApp ${name}`,
   notifyMessage: (name) =>
-    `Namaste, this is a message from ${name || "your elder"} through Bharat Saathi. Please call and check in when you can.`,
+    name
+      ? `I'm checking in — ${name} may need some help, could you reach out to them?`
+      : "I'm checking in — someone you care for may need some help, could you reach out to them?",
   home: "Home",
   name: "Name",
   age: "Age",
@@ -170,6 +174,11 @@ const hi: Strings = {
   helpline: "राष्ट्रीय एल्डर लाइन",
   callHelpline: "14567 पर अभी कॉल करें",
   notify: (name) => `${name} को बताएं`,
+  notifyWhatsApp: (name) => `${name} को WhatsApp करें`,
+  notifyMessage: (name) =>
+    name
+      ? `मैं हाल-चाल पूछ रहा हूँ — ${name} को कुछ मदद चाहिए हो सकती है, क्या आप उनसे बात कर सकते हैं?`
+      : "मैं हाल-चाल पूछ रहा हूँ — आपके परिजन को कुछ मदद चाहिए हो सकती है, क्या आप उनसे बात कर सकते हैं?",
   home: "मुख्य पृष्ठ",
   name: "नाम",
   age: "उम्र",
@@ -228,6 +237,11 @@ const mr: Strings = {
   helpline: "राष्ट्रीय एल्डर लाईन",
   callHelpline: "आत्ता 14567 वर कॉल करा",
   notify: (name) => `${name} यांना कळवा`,
+  notifyWhatsApp: (name) => `${name} यांना WhatsApp करा`,
+  notifyMessage: (name) =>
+    name
+      ? `मी विचारपूस करतो आहे — ${name} यांना थोडी मदत लागू शकते, तुम्ही त्यांच्याशी संपर्क साधाल का?`
+      : "मी विचारपूस करतो आहे — तुमच्या प्रिय व्यक्तीला थोडी मदत लागू शकते, तुम्ही त्यांच्याशी संपर्क साधाल का?",
   home: "मुख्यपृष्ठ",
   name: "नाव",
   age: "वय",

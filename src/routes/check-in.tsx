@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { MessageSquareHeart, PhoneCall, Smile } from "lucide-react";
+import { MessageCircle, MessageSquareHeart, PhoneCall, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSaathi } from "@/lib/saathi-store";
 
@@ -23,17 +23,31 @@ export const Route = createFileRoute("/check-in")({
   component: CheckInScreen,
 });
 
+function smsHref(phone: string, body: string): string {
+  const number = phone.replace(/[^\d+]/g, "");
+  const encoded = encodeURIComponent(body);
+  const ios =
+    typeof navigator !== "undefined" && /iPad|iPhone|iPod/i.test(navigator.userAgent);
+  // iOS uses &body; Android uses ?body.
+  return ios ? `sms:${number}&body=${encoded}` : `sms:${number}?body=${encoded}`;
+}
+
+function whatsappHref(phone: string, body: string): string {
+  let digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) digits = `91${digits}`;
+  if (digits.length === 11 && digits.startsWith("0")) digits = `91${digits.slice(1)}`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(body)}`;
+}
+
 function CheckInScreen() {
   const { t, profile, followUp } = useSaathi();
   const [mood, setMood] = useState<"well" | "help" | null>(followUp ? "help" : null);
 
   const showHelp = mood === "help";
-  const familyName = profile.family_contact_name?.trim();
-  const familyPhone = profile.family_contact_phone?.trim();
-
-  const smsHref = familyPhone
-    ? `sms:${familyPhone}?&body=${encodeURIComponent(t.notifyMessage(profile.name))}`
-    : undefined;
+  const familyName = profile.family_contact_name?.trim() ?? "";
+  const familyPhone = profile.family_contact_phone?.trim() ?? "";
+  const hasFamilyContact = familyName.length > 0 && familyPhone.length > 0;
+  const message = t.notifyMessage(profile.name?.trim());
 
   return (
     <main className="saathi-page">
@@ -69,13 +83,21 @@ function CheckInScreen() {
             </a>
           </Button>
 
-          {familyName && smsHref && (
-            <Button asChild size="huge" variant="calm" className="mt-4">
-              <a href={smsHref}>
-                <MessageSquareHeart aria-hidden />
-                {t.notify(familyName)}
-              </a>
-            </Button>
+          {hasFamilyContact && (
+            <>
+              <Button asChild size="huge" variant="calm" className="mt-4">
+                <a href={smsHref(familyPhone, message)}>
+                  <MessageSquareHeart aria-hidden />
+                  {t.notify(familyName)}
+                </a>
+              </Button>
+              <Button asChild size="huge" variant="calm" className="mt-4">
+                <a href={whatsappHref(familyPhone, message)} target="_blank" rel="noreferrer">
+                  <MessageCircle aria-hidden />
+                  {t.notifyWhatsApp(familyName)}
+                </a>
+              </Button>
+            </>
           )}
         </section>
       )}
