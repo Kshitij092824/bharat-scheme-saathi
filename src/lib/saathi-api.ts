@@ -64,11 +64,15 @@ function normalise(raw: unknown): Scheme[] {
       const legacyName = String(s["scheme_name"] ?? "").trim();
       const nameEn = String(s["scheme_name_en"] ?? legacyName).trim();
       const nameLocal = String(s["scheme_name_local"] ?? (legacyName || nameEn)).trim();
+      const legacyReason = String(s["reason"] ?? "").trim();
+      const reasonEn = String(s["reason_en"] ?? legacyReason).trim();
+      const reasonLocal = String(s["reason_local"] ?? (legacyReason || reasonEn)).trim();
       return {
         scheme_id: String(s["scheme_id"] ?? `scheme-${index}`),
         scheme_name_en: nameEn || nameLocal,
         scheme_name_local: nameLocal || nameEn,
-        reason: String(s["reason"] ?? "").trim(),
+        reason_en: reasonEn || reasonLocal,
+        reason_local: reasonLocal || reasonEn,
         required_documents: Array.isArray(docs) ? docs.map(toBilingual) : [],
       } satisfies Scheme;
     })
@@ -80,7 +84,8 @@ const DEMO_SCHEMES: Scheme[] = [
     scheme_id: "demo-ipgs",
     scheme_name_en: "Indira Gandhi National Old Age Pension",
     scheme_name_local: "इंदिरा गांधी राष्ट्रीय वृद्धावस्था पेंशन",
-    reason: "You are above 60 years of age and told us money is tight at home.",
+    reason_en: "You are above 60 years of age and told us money is tight at home.",
+    reason_local: "आप 60 वर्ष से अधिक हैं और घर में पैसे की तंगी बताई।",
     required_documents: [
       { en: "Aadhaar card", local: "आधार कार्ड" },
       { en: "Age proof", local: "वयाचा पुरावा" },
@@ -92,7 +97,8 @@ const DEMO_SCHEMES: Scheme[] = [
     scheme_id: "demo-ayushman",
     scheme_name_en: "Ayushman Bharat health cover",
     scheme_name_local: "आयुष्मान भारत आरोग्य विमा",
-    reason: "Your family income is low, so hospital treatment can be free for you.",
+    reason_en: "Your family income is low, so hospital treatment can be free for you.",
+    reason_local: "तुमचे कौटुंबिक उत्पन्न कमी आहे, त्यामुळे रुग्णालयातील उपचार मोफत होऊ शकतात.",
     required_documents: [
       { en: "Aadhaar card", local: "आधार कार्ड" },
       { en: "Ration card", local: "शिधापत्रिका" },

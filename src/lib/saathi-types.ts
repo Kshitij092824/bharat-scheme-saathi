@@ -52,6 +52,9 @@ export interface Scheme {
   scheme_name_en: string;
   /** Scheme name in the citizen's language (falls back to English). */
   scheme_name_local: string;
-  reason: string;
+  /** Why the citizen qualifies, in English. */
+  reason_en: string;
+  /** Why the citizen qualifies, in the citizen's language. */
+  reason_local: string;
   required_documents: BilingualText[];
 }

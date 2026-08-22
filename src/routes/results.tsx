@@ -62,9 +62,9 @@ function schemeSpeechSegments(
     `${prefix}${scheme.scheme_name_en}`,
     local,
   );
-  if (scheme.reason) {
+  if (scheme.reason_local || scheme.reason_en) {
     pushBilingual(segments, whyLabel, EN_STRINGS.whyYouQualify, local);
-    pushBilingual(segments, scheme.reason, scheme.reason, local);
+    pushBilingual(segments, scheme.reason_local, scheme.reason_en, local);
   }
   if (scheme.required_documents.length > 0) {
     pushBilingual(segments, documentsLabel, EN_STRINGS.documentsNeeded, local);
@@ -237,6 +237,9 @@ function SchemeCard({
 }) {
   const showEnglishName =
     scheme.scheme_name_en.length > 0 && scheme.scheme_name_en !== scheme.scheme_name_local;
+  const showEnglishReason =
+    scheme.reason_en.length > 0 && scheme.reason_en !== scheme.reason_local;
+  const hasReason = scheme.reason_local.length > 0 || scheme.reason_en.length > 0;
 
   return (
     <article className="rounded-2xl border-2 border-border bg-card p-5 shadow-sm">
@@ -244,8 +247,15 @@ function SchemeCard({
       {showEnglishName && (
         <p className="mt-1 text-base font-medium text-muted-foreground">{scheme.scheme_name_en}</p>
       )}
-      <p className="mt-3 text-base font-semibold text-muted-foreground">{whyLabel}</p>
-      <p className="mt-1 text-xl">{scheme.reason}</p>
+      {hasReason && (
+        <>
+          <p className="mt-3 text-base font-semibold text-muted-foreground">{whyLabel}</p>
+          <p className="mt-1 text-xl">{scheme.reason_local || scheme.reason_en}</p>
+          {showEnglishReason && (
+            <p className="mt-1 text-base text-muted-foreground">{scheme.reason_en}</p>
+          )}
+        </>
+      )}
 
       {scheme.required_documents.length > 0 && (
         <div className="mt-4 border-t-2 border-border pt-4">
