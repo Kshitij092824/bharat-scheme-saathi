@@ -6,7 +6,7 @@ import type { BilingualText, CitizenProfile, Scheme } from "./saathi-types";
  * so the flow can still be walked through end to end.
  */
 export const WEBHOOK_URL: string =
-  (import.meta.env["VITE_N8N_WEBHOOK_URL"] as string | undefined)?.trim() || "";
+  (import.meta.env.VITE_N8N_WEBHOOK_URL as string | undefined)?.trim() || "";
 
 export const isWebhookConfigured = () => WEBHOOK_URL.length > 0;
 
