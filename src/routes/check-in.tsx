@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { MessageCircle, MessageSquareHeart, PhoneCall, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { lookupCitizen } from "@/lib/saathi-api";
+import { getSavedPhone } from "@/lib/saathi-phone";
 import { useSaathi } from "@/lib/saathi-store";
 
 export const Route = createFileRoute("/check-in")({
@@ -42,17 +45,35 @@ function whatsappHref(phone: string, body: string): string {
 function CheckInScreen() {
   const { t, profile, followUp } = useSaathi();
   const [mood, setMood] = useState<"well" | "help" | null>(followUp ? "help" : null);
+  const [savedPhone, setSavedPhone] = useState("");
+
+  useEffect(() => {
+    setSavedPhone(getSavedPhone());
+  }, []);
+
+  const lookup = useQuery({
+    queryKey: ["citizen-lookup", savedPhone],
+    queryFn: () => lookupCitizen(savedPhone),
+    enabled: savedPhone.length > 0,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const citizenName =
+    lookup.data?.name?.trim() || profile.name?.trim() || undefined;
+  const familyName =
+    lookup.data?.family_contact_name?.trim() || profile.family_contact_name?.trim() || "";
+  const familyPhone =
+    lookup.data?.family_contact_phone?.trim() || profile.family_contact_phone?.trim() || "";
 
   const showHelp = mood === "help";
-  const familyName = profile.family_contact_name?.trim() ?? "";
-  const familyPhone = profile.family_contact_phone?.trim() ?? "";
   const hasFamilyContact = familyName.length > 0 && familyPhone.length > 0;
-  const message = t.notifyMessage(profile.name?.trim());
+  const message = t.notifyMessage(citizenName);
 
   return (
     <main className="saathi-page">
       <h1 className="text-primary">{t.checkIn}</h1>
-      <p className="mt-3 text-2xl">{t.checkInGreeting(profile.name)}</p>
+      <p className="mt-3 text-2xl">{t.checkInGreeting(citizenName)}</p>
 
       <div className="mt-8 grid gap-4">
         <Button size="huge" variant="leaf" onClick={() => setMood("well")}>

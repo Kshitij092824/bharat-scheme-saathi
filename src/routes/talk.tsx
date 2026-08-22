@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { ChevronDown, Mic, Search, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSaathi } from "@/lib/saathi-store";
+import { savePhone } from "@/lib/saathi-phone";
 import { hasStructuredCore, situationFromFields } from "@/lib/saathi-types";
 import { useSpeechInput } from "@/lib/use-speech";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ function TalkScreen() {
     if (!typed && structuredOk) {
       updateProfile({ situation_text: situationFromFields(profile) });
     }
+    savePhone(profile.phone ?? "");
     setSchemes(null);
     void navigate({ to: "/results" });
   };

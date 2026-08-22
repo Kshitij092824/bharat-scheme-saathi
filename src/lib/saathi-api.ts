@@ -10,6 +10,61 @@ export const WEBHOOK_URL: string =
 
 export const isWebhookConfigured = () => WEBHOOK_URL.length > 0;
 
+/** n8n webhook that looks up a returning citizen by phone. */
+export const CITIZEN_LOOKUP_URL: string =
+  (import.meta.env.VITE_N8N_CITIZEN_LOOKUP_URL as string | undefined)?.trim() ||
+  "https://arizona123.app.n8n.cloud/webhook/citizen-lookup";
+
+export interface CitizenLookup {
+  name?: string;
+  family_contact_name?: string;
+  family_contact_phone?: string;
+}
+
+function firstRecord(raw: unknown): Record<string, unknown> | null {
+  if (Array.isArray(raw)) {
+    const first = raw[0];
+    return first && typeof first === "object" ? (first as Record<string, unknown>) : null;
+  }
+  if (raw && typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (obj["data"] != null) return firstRecord(obj["data"]);
+    return obj;
+  }
+  return null;
+}
+
+function optionalString(value: unknown): string | undefined {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : undefined;
+}
+
+/** Look up a saved citizen by phone. Returns {} if nothing is found. */
+export async function lookupCitizen(phone: string): Promise<CitizenLookup> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const response = await fetch(CITIZEN_LOOKUP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`Lookup failed with status ${response.status}`);
+    const text = await response.text();
+    const raw: unknown = text ? JSON.parse(text) : {};
+    const row = firstRecord(raw);
+    if (!row) return {};
+    return {
+      name: optionalString(row["name"]),
+      family_contact_name: optionalString(row["family_contact_name"]),
+      family_contact_phone: optionalString(row["family_contact_phone"]),
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Result of a scheme lookup. `followUp` lets the backend flag a wellbeing check-in. */
 export interface SchemeLookupResult {
   schemes: Scheme[];
